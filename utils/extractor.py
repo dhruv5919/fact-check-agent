@@ -1,5 +1,6 @@
-import pymupdf as fitz
+import pdfplumber
 import re
+import tempfile
 
 
 def extract_text_from_pdf(pdf_file):
@@ -8,18 +9,27 @@ def extract_text_from_pdf(pdf_file):
 
     try:
 
-        pdf_bytes = pdf_file.read()
+        with tempfile.NamedTemporaryFile(
+            delete=False,
+            suffix=".pdf"
+        ) as tmp_file:
 
-        doc = fitz.open(
-            stream=pdf_bytes,
-            filetype="pdf"
-        )
+            tmp_file.write(
+                pdf_file.read()
+            )
 
-        for page in doc:
+            temp_path = tmp_file.name
 
-            page_text = page.get_text()
+        with pdfplumber.open(
+            temp_path
+        ) as pdf:
 
-            text += page_text
+            for page in pdf.pages:
+
+                page_text = page.extract_text()
+
+                if page_text:
+                    text += page_text + "\n"
 
         return text
 
